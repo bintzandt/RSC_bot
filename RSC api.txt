@@ -1,0 +1,22 @@
+module=user method=logIn -> Logs in a customer
+	{ username, password }
+module=agenda method=getAgenda -> Gets customer calendar
+	{ klantId, token }
+module=ticketuur method=getTicketuren -> Gets overview of ticketuren
+	{ klantId, token }
+module=ticketuur method=addTinschrijving -> Registers customer for a tickethour
+	{ klantId, token, inschrijvingId, poolId, planregelId }
+module=ticketuur method=deleteTinschrijving -> Deregisters customer for a tickethour
+	{ klantId, token, inschrijvingId }
+module=locatie method=getLocaties -> Gets an overview of free sport locations
+	{ klantId, token }
+module=locatie method=addLinschrijving -> Registers customer for a free sport hour
+	{ klantId, token, inschrijvingId, poolId, laanbodId, start, eind }
+module=locatie method=deleteLinschrijving -> Deregisters customer for a free sport hour
+	{ klantId, token, linschrijvingId }
+module=cursus method=getCursussen -> Gets an overview of cursussen
+	{ klantId, token }
+module=cursus method=addInschrijving -> Registers user for a class
+	{ klantId, token, aanbodId } -> inschrijvingId
+module=cursus method=deleteInschrijving -> Deregisters user for a class
+	{ klantId, token, inschrijvingId }
