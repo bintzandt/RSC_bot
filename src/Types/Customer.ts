@@ -4,6 +4,6 @@ export default class Customer {
     public readonly voornaam: string;
     public readonly voorvoegsels: string;
     public readonly achternaam: string;
-    public readonly waarschuwing: string;
-    public readonly boete: string;
+    public readonly waarschuwing: boolean;
+    public readonly boete: boolean;
 }

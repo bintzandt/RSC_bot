@@ -5,12 +5,12 @@ import LocationItem from "./Types/LocationItem";
 import TicketItem from "./Types/TicketItem";
 import CalendarItem from "./Types/CalendarItem";
 
+const baseUrl: string = "https://publiek.usc.ru.nl/app/api/v1/?module={module}&method={method}";
+
 /**
  * Class for handling the interaction with the RSC API.
  */
 export default class Api {
-    private baseUrl: string = "https://publiek.usc.ru.nl/app/api/v1/?module={module}&method={method}";
-
     /**
      * Function to format the baseUrl in a valid URL that can be used to send a request.
      *
@@ -19,13 +19,26 @@ export default class Api {
      *
      * @returns {string} An formatted URL that can be used in the request.
      */
-    private formatUrl( module: string, method: string ): string {
-        return this.baseUrl
+    private static formatUrl( module: string, method: string ): string {
+        return baseUrl
             .replace( "{module}", module )
             .replace( "{method}", method );
     }
 
-    private checkResponseForErrors( response ) {
+    /**
+     * The RSC API does not use the default HTTP status codes to display errors. Since all requests come back with a
+     * 200 code (success), we manually have to verify whether the request succeeded. This is done by checking for the
+     * existence of an "error" property in the response.
+     *
+     * This method can be extended when other ways of communicating errors are discovered.
+     *
+     * @param {object} response The response object.
+     *
+     * @throws An error when there is an "error" property in the response object.
+     *
+     * @returns {object} The unaltered response object when no error is discovered.
+     */
+    private static checkResponseForErrors( response ) {
         if ( response.hasOwnProperty( "error" ) ){
             throw response.error;
         }
@@ -40,8 +53,8 @@ export default class Api {
      *
      * @returns {Promise<Customer>} A promise for the logged in user.
      */
-    public async logInUser( username: string, password: string ): Promise<Customer> {
-        const url = this.formatUrl( "user", "logIn" );
+    public static async logInUser( username: string, password: string ): Promise<Customer> {
+        const url = Api.formatUrl( "user", "logIn" );
         const response: Customer = await request.post( url, {
             form: {
                 username,
@@ -49,7 +62,7 @@ export default class Api {
             },
             json: true,
         } );
-        return this.checkResponseForErrors( response );
+        return Api.checkResponseForErrors( response );
     }
 
     /**
@@ -60,14 +73,16 @@ export default class Api {
      *
      * @returns {Promise<CalendarItem[]>} An array of current CalendarItems.
      */
-    public async getCalendar( customer: Customer ): Promise<CalendarItem> {
-        const url = this.formatUrl( "agenda", "getAgenda" );
-        return request.post( url, {
+    public static async getCalendar( customer: Customer ): Promise<CalendarItem[]> {
+        const url = Api.formatUrl( "agenda", "getAgenda" );
+        const response: CalendarItem[] = await request.post( url, {
             form: {
                 klantId: customer.klantId,
                 token: customer.token,
             },
+            json: true,
         } );
+        return Api.checkResponseForErrors( response );
     }
 
     /**
@@ -77,15 +92,16 @@ export default class Api {
      *
      * @returns {Promise<LocationItem[]>} An list of locationItems.
      */
-    public async getLocations( customer: Customer ): Promise<LocationItem[]> {
-        const url = this.formatUrl( "locatie", "getLocaties" );
-        return request.post( url, {
+    public static async getLocations( customer: Customer ): Promise<LocationItem[]> {
+        const url = Api.formatUrl( "locatie", "getLocaties" );
+        const result = request.post( url, {
             form: {
                 klantId: customer.klantId,
                 token: customer.token,
             },
             json: true,
         } );
+        return Api.checkResponseForErrors( result );
     }
 
     /**
@@ -96,9 +112,9 @@ export default class Api {
      *
      * @returns {string} The registrationId.
      */
-    public async registerLocation( customer: Customer, location: LocationItem ){
-        const url = this.formatUrl( "locatie", "addLinschrijving" );
-        return request.post( url, {
+    public static async registerLocation( customer: Customer, location: LocationItem ): Promise<boolean> {
+        const url = Api.formatUrl( "locatie", "addLinschrijving" );
+        const result = await request.post( url, {
             form: {
                 klantId: customer.klantId,
                 token: customer.token,
@@ -107,8 +123,17 @@ export default class Api {
                 laanbodId: location.laanbodId,
                 start: location.start,
                 eind: location.eind,
-            }
+            },
+            json: true,
         } );
+        try {
+            Api.checkResponseForErrors( result );
+            console.log( "\x1b[32m%s\x1b[0m", "Registration successful!" );
+            return true;
+        } catch (e) {
+            console.log( "\x1b[31m%s\x1b[0m", "Registration failed for " + location.naam + " on " + location.datum );
+            return false;
+        }
     }
 
 }

@@ -1,17 +1,22 @@
 {
-  "name": "zwembo_ts",
+  "name": "zwembot",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
     "start": "ts-node -r tsconfig-paths/register src/main.ts",
-    "start:dev": "nodemon"
+    "start:dev": "nodemon",
+    "start:worker": "ts-node -r tsconfig-paths/register src/Worker.ts"
   },
   "dependencies": {
+    "@types/clear": "^0.1.0",
+    "@types/clui": "^0.3.0",
     "@types/configstore": "^4.0.0",
     "@types/inquirer": "^6.5.0",
     "@types/request": "^2.48.2",
     "@types/request-promise-native": "^1.0.16",
+    "clear": "^0.1.0",
+    "clui": "^0.3.6",
     "configstore": "^5.0.0",
     "inquirer": "^7.0.0",
     "nodemon": "^1.19.1",
