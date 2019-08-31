@@ -20,7 +20,7 @@ const run = async() => {
 
     if ( queue.length === 0 ){
         console.log( "\x1b[33m%s\x1b[0m", "Queue is empty, waiting..." );
-        return wait5minutes();
+        return waitRandomNumberOfMinutes();
     }
 
     const newQueue = await Promise.all( queue.map( async task => {
@@ -41,11 +41,17 @@ const run = async() => {
     } ) );
 
     Queue.save( newQueue.filter( item => item ) );
-    return wait5minutes();
+    return waitRandomNumberOfMinutes();
 };
 
-const wait5minutes = () => {
-    setTimeout( () => run(), 300000 );
+/**
+ * RSC might be monitoring the requests that are made. Therefor, we want to choose a "random" interval for making
+ * the requests.
+ *
+ * This function will wait a minimum of 10 minutes and up to 30 minutes before making a new set of requests.
+ */
+const waitRandomNumberOfMinutes = () => {
+    setTimeout( () => run(), Math.floor(Math.random() * 1800000) + 600000 );
 };
 
 run();
