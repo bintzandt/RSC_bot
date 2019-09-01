@@ -24,7 +24,14 @@ const run = async ( user ) => {
         case Action.REGISTER_COURSE: console.log( "Register for courses" ); break;
         case Action.REGISTER_TICKET: console.log( "Register for ticket" ); break;
         case Action.REGISTER_LOCATION:
-            const location = await Inquirer.registerLocation( user );
+            let location;
+            try {
+                location = await Inquirer.registerLocation( user );
+            } catch (e) {
+                Queue.add( { klantId: user.klantId, location: { date: e.date, time: e.time, type: e.choice } } );
+                console.log( "\x1b[32m%s\x1b[0m", "Reservation for " + e.choice + " has been added to the Queue." );
+                break;
+            }
             if ( await Api.registerLocation( user, location ) ){
                 break;
             }

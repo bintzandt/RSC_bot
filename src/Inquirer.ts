@@ -98,7 +98,7 @@ export default class Inquirer {
     }
 
     private static createLocationChoices( locations: LocationItem[] ): Choice[] {
-        return locations.map( location => new Choice(
+        const choices = locations.map( location => new Choice(
           location.datum
             + " | "
             + Display.formatDate( location.start ).toLocaleTimeString( "nl-NL", { hour12: false,  } )
@@ -108,6 +108,32 @@ export default class Inquirer {
             + (parseInt(location.maxInschrijvingen, 10 ) - parseInt(location.inschrijvingen, 10 )).toString(),
             location.planregelId,
         ) );
+        choices.unshift( new Choice( "Add a block that is in the future", "WAIT", "Future" ) );
+        return choices;
+    }
+
+    private static async askDateAndTime(): Promise<{ date: string, time: string }> {
+        const questions = [ {
+            name: "date",
+            type: "input",
+            message: "Please enter a date (YYYY-mm-dd).",
+            validate: date => {
+                const [year, month, day] = date.split( "-" );
+                if ( ! (year && month && day ) ) return false;
+                return ! ( year < 2019 || month > 12 || month < 1 || day > 31 || day < 1 );
+            },
+        }, {
+            name: "time",
+            type: "input",
+            message: "Please enter a time (HH:ii).",
+            validate: time => {
+                const [ hour, minutes ] = time.split( ":" );
+                if ( ! ( hour && minutes ) ) return false;
+                return !(hour < 0 || hour > 24 || minutes < 0 || minutes > 60);
+
+            }
+        } ];
+        return inquirer.prompt( questions );
     }
 
     /**
@@ -179,6 +205,7 @@ export default class Inquirer {
     public static async registerLocation( customer: Customer ): Promise<LocationItem> {
         const locationOfChoice = await Inquirer.askLocationChoice();
         const locations = await Api.getLocations( customer );
+        console.log( locationOfChoice.toString() );
         const filteredLocations = locations.filter( location => location.catalogusId === locationOfChoice );
         const question = [ {
             type: "list",
@@ -187,6 +214,12 @@ export default class Inquirer {
             choices: Inquirer.createLocationChoices( filteredLocations ),
         } ];
         const result: { ticket: string } = await inquirer.prompt( question );
+
+        if ( result.ticket === "WAIT" ){
+            const { date, time } =  await Inquirer.askDateAndTime();
+            throw { message: "WAIT", date, time, choice: locationOfChoice };
+        }
+
         return filteredLocations.filter( location => location.planregelId === result.ticket )[ 0 ];
     }
 }

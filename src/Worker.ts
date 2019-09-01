@@ -6,10 +6,15 @@ import LocationItem from "./Types/LocationItem";
 const getLocation = ( location, listOfLocations: LocationItem[] ): LocationItem => {
     const planRegelId = parseInt( location, 10 );
     if ( isNaN( planRegelId ) ) {
+        const time = ( (new Date( `${location.date} ${location.hour}:00`) ).getTime() / 1000 );
+        if ( time < ( ( new Date() ).getTime() / 1000 ) ) throw new Error( "expired" );
+        const foundLocation = listOfLocations.filter( loc => loc.datum === location.date && loc.start === time.toString() && loc.catalogusId === location.type );
+        if ( foundLocation.length > 0 ) return foundLocation[ 0 ];
+        throw new Error( "not available" );
     } else {
-        const location = listOfLocations.filter( location => parseInt( location.planregelId, 10 ) === planRegelId )[ 0 ];
-        if ( location === undefined ) throw new Error( "expired" );
-        return location;
+        const foundLocation = listOfLocations.filter( loc => parseInt( loc.planregelId, 10 ) === planRegelId )[ 0 ];
+        if ( foundLocation === undefined ) throw new Error( "expired" );
+        return foundLocation;
     }
 };
 
@@ -35,6 +40,7 @@ const run = async() => {
             }
         } catch (e) {
             if ( e.message !== "expired" ){
+                console.log( "\x1b[33m%s\x1b[0m", `${task.location.type} on ${task.location.date} not yet available.` );
                 return task;
             }
         }
