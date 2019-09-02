@@ -4,7 +4,7 @@ import Users from "./Users";
 import Api from "./Api";
 import LocationItem from "./Types/LocationItem";
 import Display from "./Display";
-import {parse} from "ts-node";
+import TicketItem from "./Types/TicketItem";
 
 export const CREATE_NEW_USER = "CREATE_NEW_USER";
 
@@ -22,7 +22,7 @@ export enum Location {
     "TENNIS" = "Tennis",
 }
 
-const locations = [ {
+const locations = [{
     name: "Swimming",
     value: Location.SWIMMING,
 }, {
@@ -31,9 +31,9 @@ const locations = [ {
 }, {
     name: "Squash",
     value: Location.SQUASH,
-} ];
+}];
 
-const actions = [ {
+const actions = [{
     name: "View calendar",
     value: Action.VIEW_CALENDAR,
     short: "Calendar",
@@ -50,17 +50,17 @@ const actions = [ {
     name: "Leave application",
     value: Action.EXIT,
     short: "Exit",
-} ];
+}];
 
 class Choice {
     public readonly name: string;
     public readonly value: string;
     public readonly short?: string;
 
-    constructor( name: string, value, short: string = "" ){
+    constructor(name: string, value, short: string = "") {
         this.name = name;
         this.value = value;
-        if ( short ) this.short = short;
+        if (short) this.short = short;
     }
 }
 
@@ -77,63 +77,77 @@ export default class Inquirer {
             `${customer.voornaam} ${customer.voorvoegsels}${customer.achternaam}`,
             customer.klantId,
             customer.voornaam,
-        ) );
-        choices.push( new Choice(
+        ));
+        choices.push(new Choice(
             "Create a new user",
             CREATE_NEW_USER,
             "New",
-        ) );
+        ));
         return choices;
     }
 
     private static async askLocationChoice(): Promise<Location> {
-        const question = [ {
+        const question = [{
             name: "location",
             type: "list",
             message: "What kind of location do you want to register?",
             choices: locations,
-        } ];
-        const result: { location: Location } = await inquirer.prompt( question );
+        }];
+        const result: { location: Location } = await inquirer.prompt(question);
         return result.location;
     }
 
-    private static createLocationChoices( locations: LocationItem[] ): Choice[] {
-        const choices = locations.map( location => new Choice(
-          location.datum
+    private static createLocationChoices(locations: LocationItem[]): Choice[] {
+        const choices = locations.map(location => new Choice(
+            location.datum
             + " | "
-            + Display.formatDate( location.start ).toLocaleTimeString( "nl-NL", { hour12: false,  } )
+            + Display.formatDate(location.start).toLocaleTimeString("nl-NL", {hour12: false,})
             + " | "
-            + Display.formatDate( location.eind ).toLocaleTimeString(  "nl-NL", { hour12: false,  } )
+            + Display.formatDate(location.eind).toLocaleTimeString("nl-NL", {hour12: false,})
             + " | "
-            + (parseInt(location.maxInschrijvingen, 10 ) - parseInt(location.inschrijvingen, 10 )).toString(),
+            + (parseInt(location.maxInschrijvingen, 10) - parseInt(location.inschrijvingen, 10)).toString(),
             location.planregelId,
-        ) );
-        choices.unshift( new Choice( "Add a block that is in the future", "WAIT", "Future" ) );
+        ));
+        choices.unshift(new Choice("Add a block that is in the future", "WAIT", "Future"));
         return choices;
     }
 
+    private static createTicketChoices(tickets: TicketItem[]): Choice[] {
+        return tickets.map(ticket => new Choice(
+            ticket.naam
+            + "\t| "
+            + ticket.datum
+            + "\t| "
+            + Display.formatDate(ticket.start).toLocaleTimeString("nl-NL", {hour12: false,})
+            + "\t| "
+            + Display.formatDate(ticket.eind).toLocaleTimeString("nl-NL", {hour12: false,}),
+            ticket.planregelId,
+            ticket.naam,
+        ));
+    }
+
     private static async askDateAndTime(): Promise<{ date: string, time: string }> {
-        const questions = [ {
+        const questions = [{
             name: "date",
             type: "input",
             message: "Please enter a date (YYYY-mm-dd).",
             validate: date => {
-                const [year, month, day] = date.split( "-" );
-                if ( ! (year && month && day ) ) return false;
-                return ! ( year < 2019 || month > 12 || month < 1 || day > 31 || day < 1 );
+                const [year, month, day] = date.split("-");
+                if (!(year && month && day)) return false;
+                return !(year < 2019 || month > 12 || month < 1 || day > 31 || day < 1);
             },
         }, {
             name: "time",
             type: "input",
             message: "Please enter a time (HH:ii).",
             validate: time => {
-                const [ hour, minutes ] = time.split( ":" );
-                if ( ! ( hour && minutes ) ) return false;
+                const [hour, minutes] = time.split(":");
+                if (!(hour && minutes)) return false;
                 return !(hour < 0 || hour > 24 || minutes < 0 || minutes > 60);
 
             }
-        } ];
-        return inquirer.prompt( questions );
+        }];
+        return inquirer.prompt(questions);
     }
 
     /**
@@ -182,44 +196,55 @@ export default class Inquirer {
     }
 
     public static async whatToDo(): Promise<Action> {
-        const question = [ {
+        const question = [{
             type: "list",
             name: "action",
             message: "What do you want to do?",
             choices: actions,
-        } ];
-        const result: { action: Action } = await inquirer.prompt( question );
+        }];
+        const result: { action: Action } = await inquirer.prompt(question);
         return result.action;
     }
 
-    public static async addToQueue(){
-        const question = [ {
+    public static async addToQueue() {
+        const question = [{
             type: "confirm",
             name: "addToQueue",
             message: "Do you want to put the reservation in the queue?",
             default: true,
-        } ];
-        return inquirer.prompt( question );
+        }];
+        return inquirer.prompt(question);
     }
 
-    public static async registerLocation( customer: Customer ): Promise<LocationItem> {
-        const locationOfChoice = await Inquirer.askLocationChoice();
-        const locations = await Api.getLocations( customer );
-        console.log( locationOfChoice.toString() );
-        const filteredLocations = locations.filter( location => location.catalogusId === locationOfChoice );
-        const question = [ {
+    public static async registerTicket(customer: Customer): Promise<TicketItem> {
+        const tickets = await Api.getTickets(customer);
+        const question = [{
             type: "list",
             name: "ticket",
             message: "For which ticket do you want to register?",
-            choices: Inquirer.createLocationChoices( filteredLocations ),
-        } ];
-        const result: { ticket: string } = await inquirer.prompt( question );
+            choices: Inquirer.createTicketChoices(tickets),
+        }];
+        const result: { ticket: string } = await inquirer.prompt(question);
+        return tickets.filter(ticket => ticket.planregelId === result.ticket)[0];
+    }
 
-        if ( result.ticket === "WAIT" ){
-            const { date, time } =  await Inquirer.askDateAndTime();
-            throw { message: "WAIT", date, time, choice: locationOfChoice };
+    public static async registerLocation(customer: Customer): Promise<LocationItem> {
+        const locationOfChoice = await Inquirer.askLocationChoice();
+        const locations = await Api.getLocations(customer);
+        const filteredLocations = locations.filter(location => location.catalogusId === locationOfChoice);
+        const question = [{
+            type: "list",
+            name: "location",
+            message: "For which location do you want to register?",
+            choices: Inquirer.createLocationChoices(filteredLocations),
+        }];
+        const result: { location: string } = await inquirer.prompt(question);
+
+        if (result.location === "WAIT") {
+            const {date, time} = await Inquirer.askDateAndTime();
+            throw {message: "WAIT", date, time, choice: locationOfChoice};
         }
 
-        return filteredLocations.filter( location => location.planregelId === result.ticket )[ 0 ];
+        return filteredLocations.filter(location => location.planregelId === result.location)[0];
     }
 }

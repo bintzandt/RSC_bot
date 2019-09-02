@@ -19,10 +19,10 @@ export default class Api {
      *
      * @returns {string} An formatted URL that can be used in the request.
      */
-    private static formatUrl( module: string, method: string ): string {
+    private static formatUrl(module: string, method: string): string {
         return baseUrl
-            .replace( "{module}", module )
-            .replace( "{method}", method );
+            .replace("{module}", module)
+            .replace("{method}", method);
     }
 
     /**
@@ -38,8 +38,8 @@ export default class Api {
      *
      * @returns {object} The unaltered response object when no error is discovered.
      */
-    private static checkResponseForErrors( response ) {
-        if ( response.hasOwnProperty( "error" ) ){
+    private static checkResponseForErrors(response) {
+        if (response.hasOwnProperty("error")) {
             throw response.error;
         }
         return response;
@@ -53,16 +53,16 @@ export default class Api {
      *
      * @returns {Promise<Customer>} A promise for the logged in user.
      */
-    public static async logInUser( username: string, password: string ): Promise<Customer> {
-        const url = Api.formatUrl( "user", "logIn" );
-        const response: Customer = await request.post( url, {
+    public static async logInUser(username: string, password: string): Promise<Customer> {
+        const url = Api.formatUrl("user", "logIn");
+        const response: Customer = await request.post(url, {
             form: {
                 username,
                 password,
             },
             json: true,
-        } );
-        return Api.checkResponseForErrors( response );
+        });
+        return Api.checkResponseForErrors(response);
     }
 
     /**
@@ -73,16 +73,16 @@ export default class Api {
      *
      * @returns {Promise<CalendarItem[]>} An array of current CalendarItems.
      */
-    public static async getCalendar( customer: Customer ): Promise<CalendarItem[]> {
-        const url = Api.formatUrl( "agenda", "getAgenda" );
-        const response: CalendarItem[] = await request.post( url, {
+    public static async getCalendar(customer: Customer): Promise<CalendarItem[]> {
+        const url = Api.formatUrl("agenda", "getAgenda");
+        const response: CalendarItem[] = await request.post(url, {
             form: {
                 klantId: customer.klantId,
                 token: customer.token,
             },
             json: true,
-        } );
-        return Api.checkResponseForErrors( response );
+        });
+        return Api.checkResponseForErrors(response);
     }
 
     /**
@@ -92,16 +92,28 @@ export default class Api {
      *
      * @returns {Promise<LocationItem[]>} An list of locationItems.
      */
-    public static async getLocations( customer: Customer ): Promise<LocationItem[]> {
-        const url = Api.formatUrl( "locatie", "getLocaties" );
-        const result = request.post( url, {
+    public static async getLocations(customer: Customer): Promise<LocationItem[]> {
+        const url = Api.formatUrl("locatie", "getLocaties");
+        const result = await request.post(url, {
             form: {
                 klantId: customer.klantId,
                 token: customer.token,
             },
             json: true,
-        } );
-        return Api.checkResponseForErrors( result );
+        });
+        return Api.checkResponseForErrors(result);
+    }
+
+    public static async getTickets(customer: Customer): Promise<TicketItem[]> {
+        const url = Api.formatUrl("ticketuur", "getTicketuren");
+        const result = await request.post(url, {
+            form: {
+                klantId: customer.klantId,
+                token: customer.token,
+            },
+            json: true,
+        });
+        return Api.checkResponseForErrors(result);
     }
 
     /**
@@ -112,9 +124,9 @@ export default class Api {
      *
      * @returns {string} The registrationId.
      */
-    public static async registerLocation( customer: Customer, location: LocationItem ): Promise<boolean> {
-        const url = Api.formatUrl( "locatie", "addLinschrijving" );
-        const result = await request.post( url, {
+    public static async registerLocation(customer: Customer, location: LocationItem): Promise<boolean> {
+        const url = Api.formatUrl("locatie", "addLinschrijving");
+        const result = await request.post(url, {
             form: {
                 klantId: customer.klantId,
                 token: customer.token,
@@ -125,13 +137,35 @@ export default class Api {
                 eind: location.eind,
             },
             json: true,
-        } );
+        });
         try {
-            Api.checkResponseForErrors( result );
-            console.log( "\x1b[32m%s\x1b[0m", "Registration successful!" );
+            Api.checkResponseForErrors(result);
+            console.log("\x1b[32m%s\x1b[0m", "Registration successful!");
             return true;
         } catch (e) {
-            console.log( "\x1b[31m%s\x1b[0m", "Registration failed for " + location.naam + " on " + location.datum );
+            console.log("\x1b[31m%s\x1b[0m", "Registration failed for " + location.naam + " on " + location.datum);
+            return false;
+        }
+    }
+
+    public static async registerTicket(customer: Customer, ticket: TicketItem): Promise<boolean> {
+        const url = this.formatUrl("ticketuur", "addTinschrijving");
+        const result = await request.post(url, {
+            form: {
+                klantId: customer.klantId,
+                token: customer.token,
+                inschrijvingId: ticket.inschrijvingId,
+                poolId: ticket.poolId,
+                planregelId: ticket.planregelId,
+            },
+            json: true,
+        });
+        try {
+            Api.checkResponseForErrors( result );
+            console.log("\x1b[32m%s\x1b[0m", "Registration successful!");
+            return true;
+        } catch (e) {
+            console.log("\x1b[31m%s\x1b[0m", "Registration failed for " + ticket.naam + " on " + ticket.datum);
             return false;
         }
     }

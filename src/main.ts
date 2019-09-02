@@ -22,7 +22,10 @@ const run = async ( user ) => {
     switch (choice) {
         case Action.EXIT: process.exit( 0 );  break;
         case Action.REGISTER_COURSE: console.log( "Register for courses" ); break;
-        case Action.REGISTER_TICKET: console.log( "Register for ticket" ); break;
+        case Action.REGISTER_TICKET:
+            const ticket = await Inquirer.registerTicket( user );
+            await Api.registerTicket( user, ticket );
+            break;
         case Action.REGISTER_LOCATION:
             let location;
             try {
