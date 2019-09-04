@@ -6,6 +6,9 @@ import LocationItem from "./Types/LocationItem";
 import Display from "./Display";
 import TicketItem from "./Types/TicketItem";
 import ClassItem from "./Types/ClassItem";
+import * as fuzzy from "fuzzy";
+
+inquirer.registerPrompt("autocomplete", require("inquirer-autocomplete-prompt"));
 
 export const CREATE_NEW_USER = "CREATE_NEW_USER";
 
@@ -113,38 +116,51 @@ export default class Inquirer {
         return choices;
     }
 
-    private static createTicketChoices(tickets: TicketItem[]): Choice[] {
+    private static createTicketChoices(tickets: TicketItem[], input: string): Promise<Choice[]> {
+        input = input || "";
         const maxLength = tickets
-            .map( ticket => ticket.naam.length )
-            .reduce( (maxLength: number, current: number) => current > maxLength ? current : maxLength );
-        return tickets.map(ticket => {
-            return new Choice(
-                ticket.naam.padEnd( maxLength, " " )
-                + "\t | "
-                + ticket.datum
-                + "\t| "
-                + Display.formatDate(ticket.start).toLocaleTimeString("nl-NL", {hour12: false,})
-                + "\t| "
-                + Display.formatDate(ticket.eind).toLocaleTimeString("nl-NL", {hour12: false,}),
-                ticket.planregelId,
-                ticket.naam,
-            )
-        } );
+            .map(ticket => ticket.naam.length)
+            .reduce((maxLength: number, current: number) => current > maxLength ? current : maxLength);
+        return new Promise(resolve => {
+            const fuzzyResults = fuzzy.filter(input, tickets, {extract: (input: TicketItem) => input.naam});
+            resolve(fuzzyResults.map(fuzzyResult => {
+                const ticket = fuzzyResult.original;
+                return new Choice(
+                    ticket.naam.padEnd(maxLength, " ")
+                    + "\t | "
+                    + ticket.datum
+                    + "\t| "
+                    + Display.formatDate(ticket.start).toLocaleTimeString("nl-NL", {hour12: false,})
+                    + "\t| "
+                    + Display.formatDate(ticket.eind).toLocaleTimeString("nl-NL", {hour12: false,}),
+                    ticket.planregelId,
+                    ticket.naam,
+                )
+            }));
+        });
     }
 
-    private static createClassChoices(classes: ClassItem[]): Choice[] {
+    private static createClassChoices(classes: ClassItem[], input: string): Promise<Choice[]> {
+        input = input || "";
         const maxLength = classes
-            .map( course => course.naam.length )
-            .reduce( (maxLength: number, current: number) => current > maxLength ? current : maxLength );
-        return classes.map(classItem => new Choice(
-            classItem.naam.padEnd( maxLength, " " )
-            + "\t| "
-            + Display.formatDate(classItem.eersteStart).toLocaleDateString("nl-NL")
-            + "\t| "
-            + Display.formatDate(classItem.eersteStart).toLocaleTimeString("nl-NL", {hour12: false,}),
-            classItem.aanbodId,
-            classItem.naam,
-        ));
+            .map(course => course.naam.length)
+            .reduce((maxLength: number, current: number) => current > maxLength ? current : maxLength);
+        return new Promise((resolve) => {
+            const fuzzyResults = fuzzy.filter(input, classes, {extract: (classItem) => classItem.naam});
+
+            resolve(fuzzyResults.map(fuzzyResult => {
+                const original = fuzzyResult.original;
+                return new Choice(
+                    original.naam.padEnd(maxLength, " ")
+                    + "\t| "
+                    + Display.formatDate(original.eersteStart).toLocaleDateString("nl-NL")
+                    + "\t| "
+                    + Display.formatDate(original.eersteStart).toLocaleTimeString("nl-NL", {hour12: false,}),
+                    original.aanbodId,
+                    original.naam,
+                );
+            }));
+        });
     }
 
     private static async askDateAndTime(): Promise<{ date: string, time: string }> {
@@ -240,10 +256,10 @@ export default class Inquirer {
     public static async registerTicket(customer: Customer): Promise<TicketItem> {
         const tickets = await Api.getTickets(customer);
         const question = [{
-            type: "list",
+            type: "autocomplete",
             name: "ticket",
             message: "For which ticket do you want to register?",
-            choices: Inquirer.createTicketChoices(tickets),
+            source: (answersSoFar, input) => Inquirer.createTicketChoices(tickets, input),
         }];
         const result: { ticket: string } = await inquirer.prompt(question);
         return tickets.filter(ticket => ticket.planregelId === result.ticket)[0];
@@ -252,10 +268,10 @@ export default class Inquirer {
     public static async registerClass(customer: Customer): Promise<ClassItem> {
         const classes: ClassItem[] = await Api.getClasses(customer);
         const question = [{
-            type: "list",
+            type: "autocomplete",
             name: "classItem",
             message: "For which class do you want to register?",
-            choices: Inquirer.createClassChoices(classes),
+            source: (answersSoFar, input) => Inquirer.createClassChoices(classes, input),
         }];
         const result: { classItem: string } = await inquirer.prompt(question);
         return classes.filter(classItem => classItem.aanbodId === result.classItem)[0];
