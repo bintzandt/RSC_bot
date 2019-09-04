@@ -114,22 +114,30 @@ export default class Inquirer {
     }
 
     private static createTicketChoices(tickets: TicketItem[]): Choice[] {
-        return tickets.map(ticket => new Choice(
-            ticket.naam
-            + "\t| "
-            + ticket.datum
-            + "\t| "
-            + Display.formatDate(ticket.start).toLocaleTimeString("nl-NL", {hour12: false,})
-            + "\t| "
-            + Display.formatDate(ticket.eind).toLocaleTimeString("nl-NL", {hour12: false,}),
-            ticket.planregelId,
-            ticket.naam,
-        ));
+        const maxLength = tickets
+            .map( ticket => ticket.naam.length )
+            .reduce( (maxLength: number, current: number) => current > maxLength ? current : maxLength );
+        return tickets.map(ticket => {
+            return new Choice(
+                ticket.naam.padEnd( maxLength, " " )
+                + "\t | "
+                + ticket.datum
+                + "\t| "
+                + Display.formatDate(ticket.start).toLocaleTimeString("nl-NL", {hour12: false,})
+                + "\t| "
+                + Display.formatDate(ticket.eind).toLocaleTimeString("nl-NL", {hour12: false,}),
+                ticket.planregelId,
+                ticket.naam,
+            )
+        } );
     }
 
     private static createClassChoices(classes: ClassItem[]): Choice[] {
+        const maxLength = classes
+            .map( course => course.naam.length )
+            .reduce( (maxLength: number, current: number) => current > maxLength ? current : maxLength );
         return classes.map(classItem => new Choice(
-            classItem.naam
+            classItem.naam.padEnd( maxLength, " " )
             + "\t| "
             + Display.formatDate(classItem.eersteStart).toLocaleDateString("nl-NL")
             + "\t| "
