@@ -5,6 +5,7 @@ import Api from "./Api";
 import LocationItem from "./Types/LocationItem";
 import Display from "./Display";
 import TicketItem from "./Types/TicketItem";
+import ClassItem from "./Types/ClassItem";
 
 export const CREATE_NEW_USER = "CREATE_NEW_USER";
 
@@ -126,6 +127,18 @@ export default class Inquirer {
         ));
     }
 
+    private static createClassChoices(classes: ClassItem[]): Choice[] {
+        return classes.map(classItem => new Choice(
+            classItem.naam
+            + "\t| "
+            + Display.formatDate(classItem.eersteStart).toLocaleDateString("nl-NL")
+            + "\t| "
+            + Display.formatDate(classItem.eersteStart).toLocaleTimeString("nl-NL", {hour12: false,}),
+            classItem.aanbodId,
+            classItem.naam,
+        ));
+    }
+
     private static async askDateAndTime(): Promise<{ date: string, time: string }> {
         const questions = [{
             name: "date",
@@ -226,6 +239,18 @@ export default class Inquirer {
         }];
         const result: { ticket: string } = await inquirer.prompt(question);
         return tickets.filter(ticket => ticket.planregelId === result.ticket)[0];
+    }
+
+    public static async registerClass(customer: Customer): Promise<ClassItem> {
+        const classes: ClassItem[] = await Api.getClasses(customer);
+        const question = [{
+            type: "list",
+            name: "classItem",
+            message: "For which class do you want to register?",
+            choices: Inquirer.createClassChoices(classes),
+        }];
+        const result: { classItem: string } = await inquirer.prompt(question);
+        return classes.filter(classItem => classItem.aanbodId === result.classItem)[0];
     }
 
     public static async registerLocation(customer: Customer): Promise<LocationItem> {

@@ -21,7 +21,18 @@ const run = async ( user ) => {
     const choice = await Inquirer.whatToDo();
     switch (choice) {
         case Action.EXIT: process.exit( 0 );  break;
-        case Action.REGISTER_COURSE: console.log( "Register for courses" ); break;
+        case Action.REGISTER_COURSE:
+            const classItem = await Inquirer.registerClass( user );
+            if ( await Api.registerClass( user, classItem ) ) {
+                break;
+            }
+            if ( ! await Inquirer.addToQueue() ){
+                break;
+            }
+
+            // Add the registration to the queue.
+            Queue.add( { klantId: user.klantId, classItem: classItem.aanbodId } );
+            break;
         case Action.REGISTER_TICKET:
             const ticket = await Inquirer.registerTicket( user );
             await Api.registerTicket( user, ticket );

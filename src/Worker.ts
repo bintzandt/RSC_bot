@@ -2,6 +2,7 @@ import Queue from "./Queue";
 import Users from "./Users";
 import Api from "./Api";
 import LocationItem from "./Types/LocationItem";
+import ClassItem from "./Types/ClassItem";
 
 const getLocation = ( location, listOfLocations: LocationItem[] ): LocationItem => {
     const planRegelId = parseInt( location, 10 );
@@ -18,10 +19,17 @@ const getLocation = ( location, listOfLocations: LocationItem[] ): LocationItem 
     }
 };
 
+const getClass = ( classItem, listOfClasses: ClassItem[] ): ClassItem => {
+    const foundClass = listOfClasses.filter( c => c.aanbodId === classItem )[ 0 ];
+    if ( foundClass === undefined ) throw new Error( "expired" );
+    return foundClass;
+};
+
 const run = async() => {
     // Retrieve the Queue and all possible locations.
     const queue = Queue.get();
     const locations = await Api.getLocations( Users.getStored()[ 0 ] );
+    const classes = await Api.getClasses( Users.getStored()[ 0 ] );
 
     if ( queue.length === 0 ){
         console.log( "\x1b[33m%s\x1b[0m", "Queue is empty, waiting..." );
@@ -34,6 +42,12 @@ const run = async() => {
             // Handle a location registration request
             if ( task.hasOwnProperty( "location" ) ){
                 if ( ! await Api.registerLocation( customer, getLocation( task.location, locations ) ) ){
+                    return task;
+                }
+                return null;
+            }
+            else if ( task.hasOwnProperty( "classItem" ) ){
+                if ( ! await Api.registerClass( customer, getClass( task.classItem, classes ) ) ){
                     return task;
                 }
                 return null;

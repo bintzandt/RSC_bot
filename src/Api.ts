@@ -4,6 +4,7 @@ import Customer from "./Types/Customer";
 import LocationItem from "./Types/LocationItem";
 import TicketItem from "./Types/TicketItem";
 import CalendarItem from "./Types/CalendarItem";
+import ClassItem from "./Types/ClassItem";
 
 const baseUrl: string = "https://publiek.usc.ru.nl/app/api/v1/?module={module}&method={method}";
 
@@ -116,6 +117,18 @@ export default class Api {
         return Api.checkResponseForErrors(result);
     }
 
+    public static async getClasses( customer: Customer ): Promise<ClassItem[]> {
+        const url = Api.formatUrl( "cursus", "getCursussen" );
+        const result = await request.post( url , {
+            form: {
+                klantId: customer.klantId,
+                token: customer.token,
+            },
+            json: true,
+        } );
+        return Api.checkResponseForErrors( result );
+    }
+
     /**
      * Register a user for a certain location hour.
      *
@@ -166,6 +179,26 @@ export default class Api {
             return true;
         } catch (e) {
             console.log("\x1b[31m%s\x1b[0m", "Registration failed for " + ticket.naam + " on " + ticket.datum);
+            return false;
+        }
+    }
+
+    public static async registerClass( customer: Customer, classItem: ClassItem ): Promise<boolean> {
+        const url = this.formatUrl( "cursus", "addInschrijving" );
+        const result = await request.post( url, {
+            form: {
+                klantId: customer.klantId,
+                token: customer.token,
+                aanbodId: classItem.aanbodId,
+            },
+            json: true,
+        });
+        try {
+            Api.checkResponseForErrors( result );
+            console.log("\x1b[32m%s\x1b[0m", "Registration successful!");
+            return true;
+        } catch (e) {
+            console.log("\x1b[31m%s\x1b[0m", "Registration failed for " + classItem.naam );
             return false;
         }
     }
